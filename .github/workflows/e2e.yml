@@ -1,0 +1,26 @@
+name: Ci
+on: [deployment_status]
+jobs:
+  cypress-run:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 0
+      - name: Set COMMIT_INFO_BRANCH
+        run: |
+          ref=$(git name-rev --name-only $GITHUB_SHA)
+          echo 'COMMIT_INFO_BRANCH<<EOF' >> $GITHUB_ENV
+          echo ${ref##*/} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - name: Cypress
+        uses: cypress-io/github-action@v2
+        with:
+          record: true
+        env:
+          CYPRESS_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          COMMIT_INFO_BRANCH: ${{ env.COMMIT_INFO_BRANCH }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
